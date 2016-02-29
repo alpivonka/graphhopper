@@ -25,6 +25,9 @@ import com.graphhopper.util.PMap;
 
 import java.util.HashSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import static com.graphhopper.routing.util.PriorityCode.BEST;
 
 /**
@@ -36,6 +39,7 @@ import static com.graphhopper.routing.util.PriorityCode.BEST;
  */
 public class MotorcycleFlagEncoder extends CarFlagEncoder
 {
+	private final Logger logger = LoggerFactory.getLogger(getClass());
     public static final int CURVATURE_KEY = 112;
 
     private EncodedDoubleValue reverseSpeedEncoder;
@@ -43,6 +47,9 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
     private EncodedValue curvatureEncoder;
     private final HashSet<String> avoidSet = new HashSet<String>();
     private final HashSet<String> preferSet = new HashSet<String>();
+    private final HashSet<String> veryNiceSet = new HashSet<String>();
+    private final HashSet<String> bestSet = new HashSet<String>();
+    
 
     public MotorcycleFlagEncoder()
     {
@@ -57,7 +64,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
                 properties.getBool("turnCosts", false) ? 1 : 0
         );
         this.properties = properties;
-        this.setBlockFords(properties.getBool("blockFords", true));
+        this.setBlockFords(properties.getBool("blockFords", false));
     }
 
     public MotorcycleFlagEncoder( String propertiesStr )
@@ -81,7 +88,8 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
         trackTypeSpeedMap.put("grade4", 5); // ... some hard or compressed materials
         trackTypeSpeedMap.put("grade5", 5); // ... no hard materials. soil/sand/grass
 
-        avoidSet.add("motorway");
+       /* OLD
+        * avoidSet.add("motorway");
         avoidSet.add("trunk");
         avoidSet.add("motorroad");
         avoidSet.add("residential");
@@ -89,7 +97,30 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
         preferSet.add("primary");
         preferSet.add("secondary");
         preferSet.add("tertiary");
+		*/
+        
+        
+        
+        //NEW
+		avoidSet.add("motorway"); 
+        avoidSet.add("trunk"); 
+        avoidSet.add("motorroad");
+        avoidSet.add("residential"); 
+		avoidSet.add("primary");
+		avoidSet.add("grade1"); 
 
+		veryNiceSet.add("secondary");
+		veryNiceSet.add("grade2"); 
+		veryNiceSet.add("grade3");
+		veryNiceSet.add("grade4");		
+		veryNiceSet.add("grade5");
+        
+		bestSet.add("tertiary");
+		bestSet.add("grade2");
+		bestSet.add("grade3");
+		bestSet.add("grade4");
+		bestSet.add("grade5");
+        
         maxPossibleSpeed = 120;
 
         // autobahn
@@ -336,7 +367,7 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
         }
     }
 
-    private int handlePriority( OSMWay way, long relationFlags )
+    private int handlePriority_old( OSMWay way, long relationFlags )
     {
         String highway = way.getTag("highway", "");
         if (avoidSet.contains(highway))
@@ -349,6 +380,49 @@ public class MotorcycleFlagEncoder extends CarFlagEncoder
 
         return PriorityCode.UNCHANGED.getValue();
     }
+    
+    private int handlePriority( OSMWay way, long relationFlags )
+    {
+        String highway = way.getTag("highway", "");
+		String track = way.getTag("track", "");
+		
+		if (bestSet.contains(highway))
+		{
+			if(bestSet.contains(track)){
+				logger.info("BestSet best highway" +highway);
+				logger.info("BestSet best Track" +track);
+				return PriorityCode.BEST.getValue();
+			}else{
+				logger.info("BestSet VERY_NICE highway" +highway);
+				return PriorityCode.VERY_NICE.getValue();
+			}
+		}else if (veryNiceSet.contains(highway)){
+			if(veryNiceSet.contains(track)){
+				logger.info("veryNiceSet VERY_NICE highway" +highway);
+				logger.info("veryNiceSet VERY_NICE Track" +track);
+				return PriorityCode.VERY_NICE.getValue();
+			}else{
+				logger.info("veryNiceSet PREFER highway" +highway);
+				return PriorityCode.PREFER.getValue();
+			}
+        }else if (avoidSet.contains(highway))
+        {
+			if (avoidSet.contains(track)){
+				logger.info("avoidSet WORST highway" +highway);
+				logger.info("avoidSet WORST Track" +track);
+				return PriorityCode.WORST.getValue();
+			}else {
+				logger.info("avoidSet AVOID_IF_POSSIBLE highway" +highway);
+				return PriorityCode.AVOID_IF_POSSIBLE.getValue();
+			}
+        }
+		logger.info("all UNCHANGED highway" +highway);
+        return PriorityCode.UNCHANGED.getValue();
+    }
+    
+    
+    
+    
 
     @Override
     public void applyWayTags( OSMWay way, EdgeIteratorState edge )

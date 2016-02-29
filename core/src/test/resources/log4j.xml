@@ -6,16 +6,28 @@
             <param name="ConversionPattern" value="%d [%t] %-5p %c - %m%n"/>
         </layout>
     </appender>
+    <appender name="file" class="org.apache.log4j.RollingFileAppender">
+	    <param name="append" value="false" />
+	    <param name="maxFileSize" value="10MB" />
+	    <param name="maxBackupIndex" value="10" />
+	    <param name="file" value="c://tmp//logs//Motorcycle.log" />
+		 <layout class="org.apache.log4j.PatternLayout">
+            <param name="ConversionPattern" value="%d [%t] %-5p %c - %m%n"/>
+        </layout>
+        <appender-ref ref="stdout"/>
+	</appender>
+    
     <appender name="ASYNC" class="org.apache.log4j.AsyncAppender">
         <param name="BufferSize" value="500"/>
         <appender-ref ref="stdout"/>
     </appender>    
     <logger name="com.graphhopper" additivity="false">
-        <level value="warn" />
+        <level value="info" />
         <appender-ref ref="ASYNC" />
     </logger>
     <root>
-        <priority value="warn"></priority>
+        <priority value="info"></priority>
         <appender-ref ref="ASYNC"/>
+        <appender-ref ref="file"/>
     </root>
 </log4j:configuration>
